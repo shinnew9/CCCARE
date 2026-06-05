@@ -23,9 +23,9 @@ Thumbs.db
 
 
 # Logs / Runtime
-logs/
-*.log
-*.csv
+# logs/
+# *.log
+# *.csv
 
 
 # Data
