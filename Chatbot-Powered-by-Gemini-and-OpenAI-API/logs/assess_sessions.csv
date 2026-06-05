@@ -1,0 +1,30 @@
+timestamp_utc,email,rater_id,culture,dataset_file,session_id,session_idx,empathy_warmth,clarity_helpfulness,safety_nonjudgment,cultural_appropriateness,specificity_nostereotype,meaning_preserve,comment
+2026-01-06T17:48:39+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,412,0,2,2,2,4,4,3,
+2026-01-06T18:09:31+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,77,1,3,3,3,3,3,3,
+2026-01-06T18:09:44+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,944,3,3,3,3,3,3,3,
+2026-01-06T18:09:53+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,1073,2,3,3,3,3,3,3,
+2026-01-06T18:56:25+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,803,4,3,3,3,3,3,3,
+2026-01-06T18:56:37+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,490,5,3,3,3,3,3,3,
+2026-01-06T18:57:51+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,374,6,3,3,3,3,3,3,
+2026-01-06T20:09:52+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,289,7,3,3,3,3,3,3,
+2026-01-06T20:09:59+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,1889,8,3,3,3,3,3,3,
+2026-01-06T20:10:05+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,94,9,3,3,3,3,3,3,
+2026-01-06T20:12:38+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,89,10,3,3,3,3,3,3,
+2026-01-06T20:13:40+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,306,11,3,3,3,3,3,3,
+2026-01-06T20:15:41+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,770,12,3,3,3,3,3,3,
+2026-01-06T20:21:41+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,902,13,2,3,3,3,3,3,
+2026-01-06T20:21:51+00:00,yos225@lehigh.edu,yos225,Chinese,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\psydial4\student_only_100.jsonl,2299,14,2,4,3,3,3,3,
+
+
+
+
+
+
+
+2026-05-04T05:43:09+00:00,yos225@lehigh.edu,yos225,Korean,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\korean\korean_base_app_15.json,000662,0,2,4,3,2,4,5,
+2026-05-07T11:50:10+00:00,yos225@lehigh.edu,yos225,Korean,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\korean\korean_base_app_15.json,000749,0,3,3,3,3,3,3,Base Gemini,
+2026-05-07T11:50:23+00:00,yos225@lehigh.edu,yos225,Korean,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\korean\korean_base_app_15.json,000614,1,2,4,2,4,5,2,Base Gemini,
+2026-05-07T11:50:29+00:00,yos225@lehigh.edu,yos225,Korean,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\korean\korean_base_app_15.json,000901,2,3,3,3,3,3,3,Base Gemini,
+2026-05-07T11:50:31+00:00,yos225@lehigh.edu,yos225,Korean,C:\Users\user\workspaces\vscodeprojects\CCCARE\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\korean\korean_base_app_15.json,000874,3,3,3,3,3,3,3,Base Gemini,
+2026-05-14T18:09:31+00:00,participant01@lehigh.edu,participant01,Korean,C:\Users\user\workspaces\vscodeprojects\MentalHealthAssessmentBasedonLLM\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\korean\korean_base_app_15.json,000479,0,3,3,3,3,3,3,Base Gemini,
+2026-05-14T18:09:44+00:00,participant01@lehigh.edu,participant01,Korean,C:\Users\user\workspaces\vscodeprojects\MentalHealthAssessmentBasedonLLM\Chatbot-Powered-by-Gemini-and-OpenAI-API\data\korean\korean_base_app_15.json,000480,1,3,4,1,4,2,5,Base Gemini,
