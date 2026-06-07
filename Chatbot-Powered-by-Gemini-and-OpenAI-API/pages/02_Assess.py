@@ -13,6 +13,7 @@ from core.logs_assess import (
     compute_progress,
     latest_rows_per_session,
     METRIC_FIELDS,
+    ASSESS_CSV,
 )
 
 set_base_page_config()
@@ -84,30 +85,34 @@ def _find_next_unrated_index(sessions, rated_ids_set):
     return None
 
 
-def _ensure_resume_pointer(sessions, rater_id:int, culture:str, model_type:str = ""):
-    all_rows = read_assess_rows()
-    rated_ids_set = rated_session_ids(all_rows, rater_id=rater_id, culture=culture, model_type=model_type)
-    nxt = _find_next_unrated_index(sessions, rated_ids_set)
-
-    # If session_idx not set or points to already-rated session, move to next unrated
+def _ensure_resume_pointer(sessions, rater_id: int, culture: str, model_type: str = ""):
+    """
+    Only initialize the pointer when session_idx does not exist.
+    Do NOT automatically move away from the current session after saving.
+    """
     cur_idx = st.session_state.get("session_idx", None)
-    
-    if cur_idx is None:
-        nxt = _find_next_unrated_index(sessions, rated_ids_set)
-        st.session_state["session_idx"] = nxt if nxt is not None else 0
+
+    # 이미 사용자가 어느 세션에 있으면 그대로 둔다.
+    if cur_idx is not None:
+        try:
+            cur_idx = int(cur_idx)
+        except Exception:
+            cur_idx = 0
+
+        cur_idx = max(0, min(cur_idx, len(sessions) - 1))
+        st.session_state["session_idx"] = cur_idx
         return
 
-    try:
-        cur_idx = int(cur_idx)
-    except Exception:
-        cur_idx = 0
-
-    cur_idx = max(0, min(cur_idx, len(sessions) - 1))
-    cur_sid = str(sessions[cur_idx].get("session_id", "")).strip()
-
-    if cur_sid and cur_sid in rated_ids_set:
-        nxt = _find_next_unrated_index(sessions, rated_ids_set)
-        st.session_state["session_idx"] = nxt if nxt is not None else cur_idx
+    # 처음 들어왔을 때만 next unrated로 시작한다.
+    all_rows = read_assess_rows()
+    rated_ids_set = rated_session_ids(
+        all_rows,
+        rater_id=rater_id,
+        culture=culture,
+        model_type=model_type,
+    )
+    nxt = _find_next_unrated_index(sessions, rated_ids_set)
+    st.session_state["session_idx"] = nxt if nxt is not None else 0
 
 
 def main():
@@ -228,7 +233,12 @@ def main():
     # If already rated, show info + last rating preview (latest row)
     filtered = [
         r for r in all_rows
-        if r.get("rater_id", "").strip() == rater_id and r.get("culture", "").strip() == culture
+        if r.get("rater_id", "").strip() == rater_id
+        and r.get("culture", "").strip() == culture
+        and (
+            culture != "Korean"
+            or r.get("model_type", "").strip() == model_type
+        )
     ]
     latest_map = latest_rows_per_session(filtered)
     already = sid in latest_map
@@ -252,7 +262,8 @@ def main():
         5 = Excellent
         """)
 
-    form_key_suffix = f"{culture}_{sid}_{idx}"
+    safe_model_type = str(model_type or "default").replace(" ", "_").replace("-", "_")
+    form_key_suffix = f"{culture}_{safe_model_type}_{sid}_{idx}"
 
     EVAL_QUESTIONS = [
         {
@@ -342,6 +353,19 @@ def main():
                 "comment": comment.strip(),
                 "model_type": model_type,
             }
+
+            append_assessment_row(row)
+            st.success("Your answer has been saved! You can click **Next →** below when you are ready.")
+
+            # Stay on the current session.
+            # Do not auto-scroll.
+            # Do not auto-move to the next session.
+            st.session_state["session_idx"] = idx
+
+            # DEBUG: 저장 확인용
+            debug_rows = read_assess_rows()
+            st.success(f"DEBUG: Saved locally. Current saved rows: {len(debug_rows)}")
+            st.code(str(ASSESS_CSV) if "ASSESS_CSV" in globals() else "ASSESS_CSV not imported")
 
             append_assessment_row(row)
 

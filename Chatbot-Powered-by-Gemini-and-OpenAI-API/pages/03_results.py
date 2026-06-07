@@ -39,7 +39,7 @@ def main():
 
     model_type = st.session_state.get("korean_model_type", "") if culture == "Korean" else ""
 
-    st.caption(f"Rater: {rater_id}, Culture: {culture}")
+    st.caption(f"Rater: {rater_id}, Culture: {culture} Model type: {model_type}")
 
     if culture == "Korean":
         if model_type == "Base Gemini":
@@ -64,11 +64,11 @@ def main():
     # Filter rows by rater + culture + model_type
     my_rows = []
     for r in rows:
-        if r.get("rater_id") != rater_id:
+        if str(r.get("rater_id", "")).strip() != rater_id:
             continue
-        if r.get("culture") != culture:
+        if str(r.get("culture", "")).strip() != str(culture).strip():
             continue
-        if culture == "Korean" and r.get("model_type", "") != model_type:
+        if culture == "Korean" and str(r.get("model_type", "")).strip() != str(model_type).strip():
             continue
         my_rows.append(r)
 

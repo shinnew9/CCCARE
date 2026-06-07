@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import csv
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -60,13 +61,15 @@ def append_assessment_row(row: Dict):
     ensure_csv_header()
 
     safe_row = {k: row.get(k, "") for k in CSV_FIELDS}
-    # enforce timestamp if missing
+
     if not safe_row["timestamp_utc"]:
         safe_row["timestamp_utc"] = _now_utc_iso()
 
     with open(ASSESS_CSV, "a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=CSV_FIELDS)
         w.writerow(safe_row)
+        f.flush()
+        os.fsync(f.fileno())
 
 
 def read_assess_rows() -> List[Dict]:
@@ -87,29 +90,31 @@ def filter_rows(rows: List[Dict], *, rater_id: str, culture: str) -> List[Dict]:
     return out
 
 
-# def rated_session_ids(rows: List[Dict], *, rater_id: str, culture: str) -> Set[str]:
-#     """
-#     If a session_id appears at least once for (rater_id, culture), it's considered completed for resume logic.
-#     """
-#     filtered = filter_rows(rows, rater_id=rater_id, culture=culture)
-#     return {str(r.get("session_id", "")).strip() for r in filtered if str(r.get("session_id", "")).strip()}
+def _norm(x) -> str:
+    return str(x or "").strip()
 
 
 def rated_session_ids(rows, rater_id: str, culture: str, model_type: str = ""):
     rated = set()
 
+    rater_id = _norm(rater_id)
+    culture = _norm(culture)
+    model_type = _norm(model_type)
+
     for r in rows:
-        if r.get("rater_id") != rater_id:
+        if _norm(r.get("rater_id")) != rater_id:
             continue
-        if r.get("culture") != culture:
+        if _norm(r.get("culture")) != culture:
             continue
 
-        # Korean은 Base/Fine-tuned를 반드시 구분
-        if culture == "Korean":
-            if r.get("model_type", "") != model_type:
+        # model_type이 명시된 경우에만 Base/Fine-tuned 구분
+        if model_type:
+            if _norm(r.get("model_type")) != model_type:
                 continue
 
-        rated.add(str(r.get("session_id", "")))
+        sid = _norm(r.get("session_id"))
+        if sid:
+            rated.add(sid)
 
     return rated
 
