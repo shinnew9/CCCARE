@@ -10,6 +10,7 @@ from core.logs_assess import (
     rated_session_ids,
     latest_rows_per_session,
     METRIC_FIELDS,
+    ASSESS_CSV,
 )
 
 set_base_page_config()
@@ -60,6 +61,13 @@ def main():
     total = len(sessions)
 
     rows = read_assess_rows()
+
+    st.caption(f"DEBUG: total rows loaded from CSV = {len(rows)}")
+    st.caption(f"DEBUG: CSV path = {ASSESS_CSV}")
+    st.caption(f"DEBUG: CSV exists = {ASSESS_CSV.exists()}")
+
+    if rows:
+        st.write("DEBUG first row:", rows[0])
 
     # Filter rows by rater + culture + model_type
     my_rows = []

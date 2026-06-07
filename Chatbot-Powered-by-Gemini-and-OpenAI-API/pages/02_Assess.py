@@ -150,7 +150,10 @@ def main():
     model_type = st.session_state.get("korean_model_type", "") if culture == "Korean" else ""
 
     # Resume logic (based on CSV)
-    _ensure_resume_pointer(sessions, rater_id=rater_id, culture=culture, model_type=model_type)
+    # _ensure_resume_pointer(sessions, rater_id=rater_id, culture=culture, model_type=model_type)
+
+    if "session_idx" not in st.session_state:
+        st.session_state["session_idx"] = 0
 
     # Progress UI
     all_rows = read_assess_rows()
@@ -304,6 +307,9 @@ def main():
         },
     ]
 
+    if st.session_state.get(f"saved_{form_key_suffix}", False):
+        st.success("✅ Your answer has been saved! Please click **Next →** below when you are ready.")
+
     with st.form(f"rating_form_{form_key_suffix}", clear_on_submit=False):
         scores = {}
 
@@ -355,19 +361,22 @@ def main():
             }
 
             append_assessment_row(row)
-            st.success("Your answer has been saved! You can click **Next →** below when you are ready.")
+
+            
+            # DEBUG: 저장 확인용
+            debug_rows = read_assess_rows()
+            st.session_state[f"saved_{form_key_suffix}"] = True
+            st.success(
+                f"✅ Your answer has been saved! "
+                f"Saved rows currently found: {len(debug_rows)}. "
+                f"Please click **Next →** below when you are ready."
+            )
 
             # Stay on the current session.
             # Do not auto-scroll.
             # Do not auto-move to the next session.
             st.session_state["session_idx"] = idx
 
-            # DEBUG: 저장 확인용
-            debug_rows = read_assess_rows()
-            st.success(f"DEBUG: Saved locally. Current saved rows: {len(debug_rows)}")
-            st.code(str(ASSESS_CSV) if "ASSESS_CSV" in globals() else "ASSESS_CSV not imported")
-
-            append_assessment_row(row)
 
             all_rows = read_assess_rows()
             rated_ids_set = rated_session_ids(all_rows, rater_id=rater_id, culture=culture, model_type=model_type)
@@ -389,12 +398,12 @@ def main():
     nav = st.columns([1, 1, 2, 2])
     with nav[0]:
         if st.button("← Previous", disabled=(idx <= 0), use_container_width=True):
-            st.session_state["_scroll_top"] = True
+            st.session_state[f"saved_{form_key_suffix}"] = False
             st.session_state["session_idx"] = idx - 1
             st.rerun()
     with nav[1]:
         if st.button("Next →", disabled=(idx >= len(sessions) - 1), use_container_width=True):
-            st.session_state["_scroll_top"] = True
+            st.session_state[f"saved_{form_key_suffix}"] = False
             st.session_state["session_idx"] = idx + 1
             st.rerun()
     with nav[2]:

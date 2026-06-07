@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
-
-LOG_DIR = Path(__file__).resolve().parents[1] / "logs"
+APP_ROOT = Path(__file__).resolve().parents[1]
+LOG_DIR = APP_ROOT / "logs"
 ASSESS_CSV = LOG_DIR / "assess_sessions.csv"
 
 
