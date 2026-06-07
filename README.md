@@ -1,9 +1,9 @@
-# CCCARE
+# MentalHealthAssessmentBasedonLLMSimulation
 **A Web-Based Dataset Evaluation Interface**
   A lightweight web application for hosting datasets and enabling structured human evaluation through a browser-based interface.
 
 > **TL;DR**  
-> CCCARE is a lightweight Streamlit app that hosts datasets on the web
+> MentalHealthAssessmentBasedonLLMSimulation is a lightweight Streamlit app that hosts datasets on the web
 > and enables structured human evaluation without modifying the original data.
 
 
@@ -17,8 +17,7 @@ During the winter break at Lehigh University (late December of 2025 to early Jan
 - How can human evaluation be made more consistent?
 - Does every data-facing system need a chat interface?
 
-CCCARE evolved into a **dataset-first evaluation platform**, focusing on structured scoring
-rather than conversational interaction.
+MentalHealthAssessmentBasedonLLMSimulation evolved into a **dataset-first evaluation platform**, focusing on structured scoring rather than conversational interaction.
 
 
 ## What This Project Is (and Is Not)
@@ -103,4 +102,4 @@ This separation keeps the dataset immutable while allowing flexible evaluation l
 
 
 ## 🚀 Live Demo
-Try the app here: [CCCARE](https://cccare.streamlit.app/)
+Try the app here: [MentalHealthAssessmentBasedonLLMSimulation](https://mentalhealthassessmentbasedonllm.streamlit.app/)
