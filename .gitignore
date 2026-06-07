@@ -23,9 +23,9 @@ Thumbs.db
 
 
 # Logs / Runtime
-# logs/
-# *.log
-# *.csv
+logs/
+*.log
+*.csv
 
 
 # Data
@@ -43,6 +43,30 @@ Thumbs.db
 # *_app_*.json
 
 
+
+
+
+
+
+
+# participant response data
+responses/
+raw_responses/
+analysis_outputs/
+*.csv
+
+# notebooks checkpoints
+*.ipynb_checkpoints/ 
+
+
+# Analysis
+# analysis/
+# *.ipynb
+
+# analysis_outputs/
+# *.csv
+
 # Secrets
+.streamlit/secrets.toml
 .env
 *.env
