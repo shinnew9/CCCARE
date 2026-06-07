@@ -20,47 +20,10 @@ set_base_page_config()
 inject_base_css()
 
 
-def scroll_to_top():
-    st.components.v1.html(
-        """
-        <script>
-        function goTop() {
-          const el = window.parent.document.getElementById("TOP");
-          if (el) { el.scrollIntoView({behavior: "instant", block: "start"}); }
-          else { window.parent.scrollTo(0, 0); }
-        }
-        goTop();
-        setTimeout(goTop, 50);
-        </script>
-        """,
-        height=0,
-    )
-
-
-def _session_num_messages(session: dict) -> int:
-    """
-    Count how many dialogue messages/turns exist in a session.
-    This is intentionally flexible because dataset structures may differ.
-    """
-    for key in ["messages", "conversation", "dialogue", "turns"]:
-        value = session.get(key)
-
-        if isinstance(value, list):
-            return len(value)
-
-        if isinstance(value, str):
-            # fallback: count rough speaker markers if conversation is stored as text
-            return value.count("Client") + value.count("Counselor") + value.count("Therapist")
-
-    return 0
-
-
 def _get_sessions(culture: str):
     model_type = st.session_state.get("korean_model_type", "") if culture == "Korean" else ""
 
-    # IMPORTANT:
     # model_type must be included in cache key so Base and Fine-tuned load different JSON contents.
-    # The selected session IDs remain the same because select_fixed_korean_sessions uses a fixed seed.
     cache_key = f"_sessions_cache_{culture}_{model_type}_fixed_6"
 
     cached = st.session_state.get(cache_key)
@@ -76,54 +39,17 @@ def _get_sessions(culture: str):
     return sessions
 
 
-
-def _find_next_unrated_index(sessions, rated_ids_set):
-    for i, s in enumerate(sessions):
-        sid = str(s.get("session_id", "")).strip()
-        if sid and sid not in rated_ids_set:
-            return i
-    return None
-
-
-def _ensure_resume_pointer(sessions, rater_id: int, culture: str, model_type: str = ""):
-    """
-    Only initialize the pointer when session_idx does not exist.
-    Do NOT automatically move away from the current session after saving.
-    """
-    cur_idx = st.session_state.get("session_idx", None)
-
-    # 이미 사용자가 어느 세션에 있으면 그대로 둔다.
-    if cur_idx is not None:
-        try:
-            cur_idx = int(cur_idx)
-        except Exception:
-            cur_idx = 0
-
-        cur_idx = max(0, min(cur_idx, len(sessions) - 1))
-        st.session_state["session_idx"] = cur_idx
-        return
-
-    # 처음 들어왔을 때만 next unrated로 시작한다.
-    all_rows = read_assess_rows()
-    rated_ids_set = rated_session_ids(
-        all_rows,
-        rater_id=rater_id,
-        culture=culture,
-        model_type=model_type,
-    )
-    nxt = _find_next_unrated_index(sessions, rated_ids_set)
-    st.session_state["session_idx"] = nxt if nxt is not None else 0
+def _condition_label(model_type: str) -> str:
+    if model_type == "Base Gemini":
+        return "Base"
+    if model_type == "Fine-tuned Gemini":
+        return "Fine-tuned"
+    return model_type or "Unknown"
 
 
 def main():
     require_signed_in()
     render_top_right_signout(key="signout_assess")
-
-    st.markdown('<div id="TOP"></div>', unsafe_allow_html=True)
-
-    # consume scroll flag exactly once per render
-    if st.session_state.pop("_scroll_top", False):
-        scroll_to_top()
 
     culture = st.session_state.get("culture")
     if not culture:
@@ -133,7 +59,7 @@ def main():
 
     rater_id = st.session_state.get("rater_id", "").strip()
     email = st.session_state.get("email", "").strip()
-    
+
     ds_conf = DATASET_FILES.get(culture) or ""
 
     if culture == "Korean" and isinstance(ds_conf, dict):
@@ -143,19 +69,25 @@ def main():
         model_type = ""
         ds_file = str(ds_conf)
 
-
     sessions = _get_sessions(culture)
     total = len(sessions)
 
-    model_type = st.session_state.get("korean_model_type", "") if culture == "Korean" else ""
+    if total == 0:
+        st.error("No sessions found for this dataset.")
+        st.stop()
 
-    # Resume logic (based on CSV)
-    # _ensure_resume_pointer(sessions, rater_id=rater_id, culture=culture, model_type=model_type)
-
+    # Do not auto-resume during data collection.
+    # Keep session_idx simple and stable.
     if "session_idx" not in st.session_state:
         st.session_state["session_idx"] = 0
 
-    # Progress UI
+    idx = int(st.session_state.get("session_idx", 0) or 0)
+    idx = max(0, min(idx, total - 1))
+    st.session_state["session_idx"] = idx
+
+    session = sessions[idx]
+    sid = str(session.get("session_id", "")).strip()
+
     all_rows = read_assess_rows()
     done, total = compute_progress(
         total,
@@ -165,17 +97,14 @@ def main():
         model_type=model_type,
     )
 
+    # Flash message after save + rerun
+    if st.session_state.pop("_rating_saved_flash", False):
+        st.success("✅ Your answer has been saved! Moving to the next session.")
+
     st.markdown("## Conversation Assess")
+
     if culture == "Korean":
-        model_label = st.session_state.get("korean_model_type", "Base Gemini")
-
-        if model_label == "Base Gemini":
-            condition_label = "Base"
-        elif model_label == "Fine-tuned Gemini":
-            condition_label = "Fine-tuned"
-        else:
-            condition_label = model_label
-
+        condition_label = _condition_label(model_type)
         st.info(
             f"**Current condition: {condition_label}**  \n"
             f"Progress: **{done}/{total}** completed."
@@ -183,78 +112,59 @@ def main():
     else:
         st.caption(f"Dataset: {culture} • Progress: {done}/{total} completed")
 
-
-
-    # Controls: Resume / Start Over
-    ctrl = st.columns([1.2, 1.2, 3])
-    with ctrl[0]:
-        if st.button("Resume next unrated", use_container_width=True):
-            rated_ids_set = rated_session_ids(all_rows, rater_id=rater_id, culture=culture)
-            nxt = _find_next_unrated_index(sessions, rated_ids_set)
-            if nxt is not None:
-                st.session_state["_scroll_top"] = True
-                st.session_state["session_idx"] = nxt
-                st.rerun()
-            else:
-                st.toast("All sessions have been rated at least once.", icon="✅")
-    with ctrl[1]:
-        if st.button("Start from first", use_container_width=True):
-            st.session_state["_scroll_top"] = True
-            st.session_state["session_idx"] = 0
-            st.rerun()
-
-    # Current session
-    idx = int(st.session_state.get("session_idx", 0) or 0)
-    idx = max(0, min(idx, len(sessions) - 1))
-    st.session_state["session_idx"] = idx
-    session = sessions[idx]
-    sid = str(session.get("session_id", "")).strip()
+    st.caption(f"DEBUG: CSV path = {ASSESS_CSV}")
+    st.caption(f"DEBUG: CSV exists = {ASSESS_CSV.exists()}")
+    st.caption(f"DEBUG: total rows currently loaded = {len(all_rows)}")
 
     st.markdown("---")
     st.subheader(f"Session {idx + 1} / {len(sessions)}")
 
     psychotherapy = session.get("psychotherapy", "")
 
-    st.markdown(f"""
-    <span style="font-size: 0.85rem; opacity: 0.7;">
-    Session ID: {sid}
-    </span>
+    st.markdown(
+        f"""
+        <span style="font-size: 0.85rem; opacity: 0.7;">
+        Session ID: {sid}
+        </span>
 
-    <span style="background-color:#2a2f3a; padding:4px 10px; border-radius:10px; font-size:0.8rem; margin-left:6px;">
-    {psychotherapy}
-    </span>
-    </div>
-    """, unsafe_allow_html=True)
+        <span style="background-color:#2a2f3a; padding:4px 10px; border-radius:10px; font-size:0.8rem; margin-left:6px;">
+        {psychotherapy}
+        </span>
+        """,
+        unsafe_allow_html=True,
+    )
 
-
-
-    # Chat (left/right bubbles)
     render_chat(session.get("turns", []), culture=culture)
 
     st.markdown("---")
 
-    # If already rated, show info + last rating preview (latest row)
+    # Check whether this exact session has been rated for this rater/culture/model_type
     filtered = [
         r for r in all_rows
-        if r.get("rater_id", "").strip() == rater_id
-        and r.get("culture", "").strip() == culture
+        if str(r.get("rater_id", "")).strip() == rater_id
+        and str(r.get("culture", "")).strip() == str(culture).strip()
         and (
             culture != "Korean"
-            or r.get("model_type", "").strip() == model_type
+            or str(r.get("model_type", "")).strip() == str(model_type).strip()
         )
     ]
+
     latest_map = latest_rows_per_session(filtered)
     already = sid in latest_map
+
     if already:
-        st.info("This session has been rated before (history is preserved). You can rate again; a new row will be appended.")
+        st.info(
+            "This session has been rated before. "
+            "If you save again, a new row will be appended and the latest rating will be used for summary."
+        )
         last = latest_map[sid]
         with st.expander("Show latest saved rating for this session"):
-            st.write({k: last.get(k, "") for k in ["timestamp_utc", *METRIC_FIELDS, "comment"]})
+            st.write({k: last.get(k, "") for k in ["timestamp_utc", *METRIC_FIELDS, "model_type", "comment"]})
 
-    # Rating form
     st.markdown("### Rate this conversation (1–5)")
 
-    st.markdown("""
+    st.markdown(
+        """
         Please evaluate the counseling response using the six dimensions below.
 
         **Scale:**  
@@ -263,7 +173,8 @@ def main():
         3 = Acceptable  
         4 = Good  
         5 = Excellent
-        """)
+        """
+    )
 
     safe_model_type = str(model_type or "default").replace(" ", "_").replace("-", "_")
     form_key_suffix = f"{culture}_{safe_model_type}_{sid}_{idx}"
@@ -307,9 +218,6 @@ def main():
         },
     ]
 
-    if st.session_state.get(f"saved_{form_key_suffix}", False):
-        st.success("✅ Your answer has been saved! Please click **Next →** below when you are ready.")
-
     with st.form(f"rating_form_{form_key_suffix}", clear_on_submit=False):
         scores = {}
 
@@ -337,8 +245,6 @@ def main():
 
         submit = st.form_submit_button("Save rating")
 
-        model_type = st.session_state.get("korean_model_type", "") if culture == "Korean" else ""
-
         if submit:
             row = {
                 "timestamp_utc": "",
@@ -356,59 +262,42 @@ def main():
                 "specificity_nostereotype": str(scores["specificity_nostereotype"]),
                 "meaning_preserve": str(scores["meaning_preserve"]),
 
-                "comment": comment.strip(),
                 "model_type": model_type,
+                "comment": comment.strip(),
             }
 
             append_assessment_row(row)
 
-            
-            # DEBUG: 저장 확인용
-            debug_rows = read_assess_rows()
-            st.session_state[f"saved_{form_key_suffix}"] = True
-            st.success(
-                f"✅ Your answer has been saved! "
-                f"Saved rows currently found: {len(debug_rows)}. "
-                f"Please click **Next →** below when you are ready."
-            )
+            # Save 성공 메시지를 다음 render에서 보여주기
+            st.session_state["_rating_saved_flash"] = True
 
-            # Stay on the current session.
-            # Do not auto-scroll.
-            # Do not auto-move to the next session.
-            st.session_state["session_idx"] = idx
-
-
-            all_rows = read_assess_rows()
-            rated_ids_set = rated_session_ids(all_rows, rater_id=rater_id, culture=culture, model_type=model_type)
-            nxt = _find_next_unrated_index(sessions, rated_ids_set)
-
-            st.session_state["_scroll_top"] = True
-
-            if nxt is None:
-                st.toast("Saved! All sessions rated at least once.", icon="✅")
-                st.session_state["session_idx"] = idx
+            # Save rating을 누른 경우에만 다음 session으로 이동
+            if idx < len(sessions) - 1:
+                st.session_state["session_idx"] = idx + 1
             else:
-                st.toast("Saved! Moving to next unrated session…", icon="✅")
-                st.session_state["session_idx"] = nxt
-                st.rerun()
+                st.session_state["session_idx"] = idx
 
+            st.rerun()
 
-    # Navigation (manual)
     st.markdown("---")
+
     nav = st.columns([1, 1, 2, 2])
+
     with nav[0]:
         if st.button("← Previous", disabled=(idx <= 0), use_container_width=True):
-            st.session_state[f"saved_{form_key_suffix}"] = False
             st.session_state["session_idx"] = idx - 1
             st.rerun()
+
     with nav[1]:
         if st.button("Next →", disabled=(idx >= len(sessions) - 1), use_container_width=True):
-            st.session_state[f"saved_{form_key_suffix}"] = False
+            # Next는 저장 없이 이동만 함
             st.session_state["session_idx"] = idx + 1
             st.rerun()
+
     with nav[2]:
         if st.button("Back to dataset select", use_container_width=True):
             st.switch_page("pages/01_Dataset.py")
+
     with nav[3]:
         if st.button("Go to results →", use_container_width=True):
             st.switch_page("pages/03_results.py")

@@ -20,7 +20,6 @@ METRIC_FIELDS = [
     "cultural_appropriateness",
     "specificity_nostereotype",
     "meaning_preserve",
-    "model_type"
 ]
 
 
@@ -33,6 +32,7 @@ CSV_FIELDS = [
     "session_id",
     "session_idx",
     *METRIC_FIELDS,
+    "model_type",    
     "comment",
 ]
 
@@ -92,6 +92,33 @@ def filter_rows(rows: List[Dict], *, rater_id: str, culture: str) -> List[Dict]:
 
 def _norm(x) -> str:
     return str(x or "").strip()
+
+def _norm_model_type(x) -> str:
+    x = str(x or "").strip().lower()
+    x = x.replace("-", " ")
+    x = x.replace("_", " ")
+    x = " ".join(x.split())
+
+    if x in ["base", "base gemini"]:
+        return "base"
+    if x in ["fine tuned", "finetuned", "fine tuned gemini", "fine tuned gemini", "fine-tuned gemini"]:
+        return "fine_tuned"
+    return x
+
+
+def same_model_type(row_model_type: str, target_model_type: str) -> bool:
+    """
+    Accept aliases such as:
+    Base == Base Gemini
+    Fine-tuned == Fine-tuned Gemini
+    """
+    target = _norm_model_type(target_model_type)
+
+    # If no target condition is selected, don't filter by model_type.
+    if not target:
+        return True
+
+    return _norm_model_type(row_model_type) == target
 
 
 def rated_session_ids(rows, rater_id: str, culture: str, model_type: str = ""):

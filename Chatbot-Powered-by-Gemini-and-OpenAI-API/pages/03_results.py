@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 from core_ui.layout import set_base_page_config, inject_base_css, render_top_right_signout
 from core_ui.auth import require_signed_in
@@ -11,6 +12,7 @@ from core.logs_assess import (
     latest_rows_per_session,
     METRIC_FIELDS,
     ASSESS_CSV,
+    same_model_type,
 )
 
 set_base_page_config()
@@ -72,11 +74,11 @@ def main():
     # Filter rows by rater + culture + model_type
     my_rows = []
     for r in rows:
-        if str(r.get("rater_id", "")).strip() != rater_id:
+        if str(r.get("rater_id", "")).strip() != str(rater_id).strip():
             continue
         if str(r.get("culture", "")).strip() != str(culture).strip():
             continue
-        if culture == "Korean" and str(r.get("model_type", "")).strip() != str(model_type).strip():
+        if culture == "Korean" and not same_model_type(r.get("model_type", ""), model_type):
             continue
         my_rows.append(r)
 
@@ -146,7 +148,13 @@ def main():
 
     keep_cols = [
         "timestamp_utc",
+        "email",
+        "rater_id",
+        "culture",
+        "model_type",
+        "dataset_file",
         "session_id",
+        "session_idx",
         "empathy_warmth",
         "clarity_helpfulness",
         "safety_nonjudgment",
@@ -157,7 +165,17 @@ def main():
     ]
 
     compact = [{k: row.get(k, "") for k in keep_cols} for row in my_rows_sorted]
-    st.dataframe(compact, use_container_width=True, hide_index=True)
+    compact_df = pd.DataFrame(compact)
+
+    st.dataframe(compact_df, use_container_width=True, hide_index=True)
+
+    if not compact_df.empty:
+        st.download_button(
+            label="Download my saved rows as CSV",
+            data=compact_df.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"{rater_id}_{culture}_{model_type}_ratings.csv".replace(" ", "_"),
+            mime="text/csv",
+        )
 
     st.markdown("---")
     nav = st.columns([1, 1, 2])
