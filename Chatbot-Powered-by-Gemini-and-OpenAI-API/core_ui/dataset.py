@@ -145,13 +145,72 @@ def resolve_dataset_path(culture: str):
 
 
 def _load_json(path: Path) -> Any:
+    """
+    Load JSON data robustly.
+
+    Supports:
+    1. Standard JSON: {...} or [...]
+    2. JSONL: one JSON object per line
+    3. Multiple JSON objects concatenated in one file
+    """
     path = Path(path)
 
     if not path.exists():
         raise FileNotFoundError(f"Dataset file not found: {path}")
 
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    text = path.read_text(encoding="utf-8").strip()
+
+    if not text:
+        return []
+
+    # 1. Try normal JSON first
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # 2. Try JSONL: one JSON object per line
+    rows = []
+    jsonl_ok = True
+
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            jsonl_ok = False
+            break
+
+    if jsonl_ok and rows:
+        return rows
+
+    # 3. Try concatenated JSON objects
+    decoder = json.JSONDecoder()
+    idx = 0
+    objs = []
+
+    while idx < len(text):
+        while idx < len(text) and text[idx].isspace():
+            idx += 1
+
+        if idx >= len(text):
+            break
+
+        try:
+            obj, end = decoder.raw_decode(text, idx)
+            objs.append(obj)
+            idx = end
+        except json.JSONDecodeError as e:
+            raise json.JSONDecodeError(
+                f"Could not parse dataset file {path}. Original error: {e.msg}",
+                e.doc,
+                e.pos,
+            )
+
+    return objs
 
 
 def _extract_sessions(data: Any) -> List[Dict]:
