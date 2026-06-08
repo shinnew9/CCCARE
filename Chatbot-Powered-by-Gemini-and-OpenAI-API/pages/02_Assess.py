@@ -23,17 +23,17 @@ inject_base_css()
 def _get_sessions(culture: str):
     model_type = st.session_state.get("korean_model_type", "") if culture == "Korean" else ""
 
-    # model_type must be included in cache key so Base and Fine-tuned load different JSON contents.
     cache_key = f"_sessions_cache_{culture}_{model_type}_fixed_6"
 
     cached = st.session_state.get(cache_key)
     if cached and isinstance(cached, list) and len(cached) > 0:
         return cached
 
-    sessions = get_sessions_for_culture(culture)
-
     if culture == "Korean":
+        sessions = get_sessions_for_culture(culture, model_type=model_type)
         sessions = select_fixed_korean_sessions(sessions)
+    else:
+        sessions = get_sessions_for_culture(culture)
 
     st.session_state[cache_key] = sessions
     return sessions
@@ -70,7 +70,17 @@ def main():
         ds_file = str(ds_conf)
 
     sessions = _get_sessions(culture)
-    total = len(sessions)
+    st.caption(f"DEBUG model_type = {model_type}")
+    st.caption(f"DEBUG dataset_file = {ds_file}")
+    st.caption(f"DEBUG first session id = {sessions[0].get('session_id', '') if sessions else 'NO SESSION'}")
+    st.write("DEBUG first session sample:", sessions[0].get("turns", [])[:2] if sessions else [])
+
+    if sessions:
+        first_turns = sessions[0].get("turns", [])
+        st.caption(f"DEBUG first session turns count = {len(first_turns)}")
+        st.write("DEBUG first session sample:", first_turns[:2])
+
+        total = len(sessions)
 
     if total == 0:
         st.error("No sessions found for this dataset.")

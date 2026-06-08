@@ -142,24 +142,79 @@ def resolve_dataset_path(culture: str):
     return None
 
 
-def get_sessions_for_culture(culture: str):
-    path = resolve_dataset_path(culture)
+def _load_json(path: Path) -> Any:
+    path = Path(path)
 
-    if not path:
-        st.error("This dataset is not configured yet.")
-        st.stop()
+    if not path.exists():
+        raise FileNotFoundError(f"Dataset file not found: {path}")
+
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _extract_sessions(data: Any) -> List[Dict]:
+    """
+    Support common JSON structures:
+    1. [session, session, ...]
+    2. {"sessions": [...]}
+    3. {"data": [...]}
+    4. {"conversations": [...]}
+    """
+    if isinstance(data, list):
+        return data
+
+    if isinstance(data, dict):
+        for key in ["sessions", "data", "conversations"]:
+            if key in data and isinstance(data[key], list):
+                return data[key]
+
+    raise ValueError(
+        "Unsupported dataset JSON format. Expected a list or a dict containing "
+        "'sessions', 'data', or 'conversations'."
+    )
+
+
+def get_dataset_file_for_culture(culture: str, model_type: Optional[str] = None) -> Path:
+    """
+    Return the dataset path for a culture.
+
+    For Korean, model_type must distinguish Base Gemini vs Fine-tuned Gemini.
+    """
+    conf = DATASET_FILES.get(culture)
+
+    if conf is None:
+        raise ValueError(f"No dataset configured for culture: {culture}")
 
     if culture == "Korean":
-        raw_rows = load_json(path)
-        sessions = [parse_session_korean_output(r) for r in raw_rows]
-    else:
-        raw_rows = load_jsonl(path)
-        sessions = [parse_session_psydial(r) for r in raw_rows]
+        if not isinstance(conf, dict):
+            raise ValueError(
+                "Korean dataset config must be a dict with Base Gemini and Fine-tuned Gemini files."
+            )
 
-    sessions = [s for s in sessions if s.get("turns")]
+        model_type = model_type or "Base Gemini"
 
-    if not sessions:
-        st.error("No sessions found in the dataset.")
-        st.stop()
+        if model_type not in conf:
+            raise ValueError(
+                f"No Korean dataset configured for model_type={model_type}. "
+                f"Available: {list(conf.keys())}"
+            )
+
+        return Path(conf[model_type])
+
+    if isinstance(conf, dict):
+        raise ValueError(
+            f"Dataset config for {culture} is a dict, but no model_type was provided."
+        )
+
+    return Path(conf)
+
+
+def get_sessions_for_culture(culture: str, model_type: Optional[str] = None) -> List[Dict]:
+    """
+    Load sessions for the selected culture/model condition.
+    """
+    dataset_file = get_dataset_file_for_culture(culture, model_type=model_type)
+    data = _load_json(dataset_file)
+    sessions = _extract_sessions(data)
 
     return sessions

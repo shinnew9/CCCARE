@@ -58,7 +58,10 @@ def main():
     sessions = get_sessions_for_culture(culture)
 
     if culture == "Korean":
+        sessions = get_sessions_for_culture(culture, model_type=model_type)
         sessions = select_fixed_korean_sessions(sessions)
+    else:
+        sessions = get_sessions_for_culture(culture)
 
     total = len(sessions)
 
